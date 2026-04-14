@@ -17,10 +17,7 @@
 class FCFS : public Scheduler
 {
 private:
-   std::queue<Job> ready_queue;
    
-
-
 public:
     FCFS(std::queue<Job> jobs, double switch_overhead) : Scheduler(jobs, switch_overhead)
     {
@@ -34,7 +31,7 @@ public:
         if (current_job_.name ==0) {
 
             if (job_queue_.empty()) {
-                return -1;
+                return -1; // 대기 작업 없으면 종료
             }
                 // job_queue에서 current_job_에 할당
                 else {
@@ -92,7 +89,7 @@ public:
         
         if (current_job_.name == 0) {
             if (job_queue_.empty() && ready_queue_.empty()) {
-                return -1;
+                return -1; // 실행, 도착 예정, 대기 작업 없으면 종료
             }  
         
             // 최소 작업 시간 구하는 함수
@@ -158,13 +155,67 @@ public:
         time_slice_ = time_slice;
         left_slice_ = time_slice;
     }
-
+    
+    // RR 스케줄링 함수
+    // 매 호출마다 도착 작업 wating_queue로 옮긴 후
+    // 현재 작업이 없으면 FCFS 방식으로 다음 작업 선택
+    // 1초 실행 후 작업 완료 / time slice 종료 여부 체크
+    // 모든 작업 완료 시 return -1
     int run() override
     {
-        /* 
-        * 구현
-        */
-        return -1;
+       // 도착 작업 옮기기
+       while (!job_queue_.empty() && job_queue_.front().arrival_time <= current_time_) {
+        waiting_queue.push(job_queue_.front());
+        job_queue_.pop();
+       }
+
+       if (current_job_.name == 0) {
+            if (waiting_queue.empty() && job_queue_.empty()) {
+                return -1; // 실행, 도착 예정, 대기 작업 없으면 종료
+              }
+            else {
+                current_job_ = waiting_queue.front();
+                waiting_queue.pop();
+
+                // 첫 작업이 아니라면 context switch 시간 추가
+                if (!end_jobs_.empty()) {
+                    current_time_ += switch_time_;
+                }
+
+                // 첫 실행에만 first run time 기록
+                if (current_job_.remain_time == current_job_.service_time) { 
+                    current_job_.first_run_time = current_time_;
+                }
+
+                // time slice 초기화
+                left_slice_ = time_slice_; 
+            }
+        }
+
+        // 1s 실행
+        current_job_.remain_time--;
+        current_time_++;
+        left_slice_--; // 남은 time slice 감소
+
+        // 완료된 작업 end_jobs_에 push back
+        if (current_job_.remain_time == 0) { 
+            current_job_.completion_time = current_time_;
+            end_jobs_.push_back(current_job_);
+
+            int finished_job_name = current_job_.name;
+            current_job_ = Job(); // 초기화
+            return finished_job_name; // 완료 작업 이름 반환
+
+        }
+
+        // time slice 종료 체크
+        if (left_slice_ == 0) { 
+            waiting_queue.push(current_job_); // 현재 작업 waiting_queue로 이동
+            current_job_ = Job(); // 초기화
+        }
+    
+        return current_job_.name; // 실행 중인 작업 이름 반환
+
     }
 };
 
