@@ -16,9 +16,8 @@ class FCFS : public Scheduler
 {
 private:
    std::queue<Job> ready_queue;
-    /*
-    * 구현 (멤버 변수/함수 추가 및 삭제 가능)
-    */
+   
+
 
 public:
     FCFS(std::queue<Job> jobs, double switch_overhead) : Scheduler(jobs, switch_overhead)
@@ -28,38 +27,33 @@ public:
 
     int run() override
     {
-        // 1. 도착 작업들을 ready_queue로 이동
-        while (!job_queue_.empty() && job_queue_.front().arrival_time <= current_time_) {
-            ready_queue.push(job_queue_.front());
-            job_queue_.pop();
-        }
+    
+        // 모든 작업 완료 확인
+        if (current_job_.name ==0) {
 
-        // 2. 모든 작업 완료 확인
-        if (ready_queue.empty() && current_job_.name == 0) {
-            if (job_queue_.empty()) return -1; // 모든 작업 완료
-            current_time_++; // 도착 안한 작업 대기
-            return 0; // idle 상태
-        }
-        
-        // 3. 현재 작업이 없으면 ready_queue에서 새 작업 선택
-        if (current_job_.name == 0 && !ready_queue.empty()) {
-            current_job_ = ready_queue.front();
-            ready_queue.pop();
-
-            // context switch 시간 추가
-            current_time_ += switch_time_;
-
-            // 첫 실행 시간 기록
-            if (current_job_.first_run_time == 0) {
-                current_job_.first_run_time = current_time_;
+            if (job_queue_.empty()) {
+                return -1;
             }
+                // job_queue에서 current_job_에 할당
+                else {
+                    current_job_ = job_queue_.front();
+                    job_queue_.pop();
+                }
+            
+            // 첫 작업이 아니라면 context switch 시간 추가
+            if (!end_jobs_.empty()) {
+                current_time_ += switch_time_;
+            }
+
+            // first run time 기록
+            current_job_.first_run_time = current_time_;
         }
 
-        // 4. 1s 실행
+        // 1s 실행
         current_job_.remain_time--;
         current_time_++;
 
-        // 5. 작업 완료 처리
+        // 
         if (current_job_.remain_time == 0) {
             current_job_.completion_time = current_time_;
             end_jobs_.push_back(current_job_);
@@ -70,7 +64,7 @@ public:
 
         }
 
-        return -1;
+        return current_job_.name; // 실행 중인 작업 이름 반환
     }
 };
 
