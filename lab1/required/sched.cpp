@@ -210,12 +210,10 @@ public:
 
         // time slice 종료 체크
         if (left_slice_ == 0) { 
-           while (!job_queue_.empty() && job_queue_.front().arrival_time <= current_time_) {
-                waiting_queue.push(job_queue_.front());
-                job_queue_.pop();
-                }
             waiting_queue.push(current_job_); // 현재 작업 대기 큐로 이동
+            int finished_job_name = current_job_.name; // time slice 종료된 작업 이름 저장
             current_job_ = Job(); // 초기화
+            return finished_job_name; // time slice 종료된 작업 이름 반환
         }
     
         return current_job_.name; // 실행 중인 작업 이름 반환
