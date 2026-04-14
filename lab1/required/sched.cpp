@@ -210,7 +210,11 @@ public:
 
         // time slice 종료 체크
         if (left_slice_ == 0) { 
-            waiting_queue.push(current_job_); // 현재 작업 waiting_queue로 이동
+           while (!job_queue_.empty() && job_queue_.front().arrival_time <= current_time_) {
+                waiting_queue.push(job_queue_.front());
+                job_queue_.pop();
+                }
+            waiting_queue.push(current_job_); // 현재 작업 대기 큐로 이동
             current_job_ = Job(); // 초기화
         }
     
