@@ -1,8 +1,10 @@
 /*
  *	DKU Operating System Lab (2026)
  *	    Lab1 (Scheduler Algorithm Simulator)
- *	    Student id : 
- *	    Student name :
+ *	    Student id : 32213679
+ *	    Student name : 이현서
+    *	Date : 2026.04.15
+        Contents : FCFS, SPN, RR, Feedback scheduler implementation
  */
 
 #include <string>
@@ -28,7 +30,7 @@ public:
     int run() override
     {
     
-        // 모든 작업 완료 확인
+        // 
         if (current_job_.name ==0) {
 
             if (job_queue_.empty()) {
@@ -53,7 +55,7 @@ public:
         current_job_.remain_time--;
         current_time_++;
 
-        // 
+        // 완료된 작업 end_jobs_에 push back
         if (current_job_.remain_time == 0) {
             current_job_.completion_time = current_time_;
             end_jobs_.push_back(current_job_);
@@ -71,24 +73,67 @@ public:
 class SPN : public Scheduler
 {
 private:
-    /*
-    * 구현 (멤버 변수/함수 추가 및 삭제 가능)
-    */
+    // 도착했으나 실행되지 않은 작업 저장 위한 ready_queue
+    std::vector<Job> ready_queue_; 
 
 public:
     SPN(std::queue<Job> jobs, double switch_overhead) : Scheduler(jobs, switch_overhead)
     {
-        /* 
-        * 구현 (멤버 변수/함수 추가 및 삭제 가능)
-        */
+        name = "SPN";
     }
-
+     
     int run() override
     {
-        /*
-        * 구현
-        */
-        return -1;
+        // 최소 작업 시간 순으로 job_quueue에 할당
+        while (!job_queue_.empty() && job_queue_.front().arrival_time <= current_time_) {
+            ready_queue_.push_back(job_queue_.front());
+            job_queue_.pop();
+         }
+        
+        if (current_job_.name == 0) {
+            if (job_queue_.empty() && ready_queue_.empty()) {
+                return -1;
+            }  
+        
+            // 최소 작업 시간 구하는 함수
+            int min_index = 0;
+            for (size_t i=1; i<ready_queue_.size(); i++) {
+            if (ready_queue_[i].service_time < ready_queue_[min_index].service_time) {
+                min_index = i;
+                }
+            }
+
+            // 최소 작업 시간 순으로 ready_queue에서 current_job_에 할당
+            current_job_ = ready_queue_[min_index];
+            ready_queue_.erase(ready_queue_.begin() + min_index);
+                         
+            
+            // 첫 작업이 아니라면 context switch 시간 추가
+            if (!end_jobs_.empty()) {
+                current_time_ += switch_time_;
+                }
+
+            // first run time 기록
+            current_job_.first_run_time = current_time_;
+         }
+
+        // 1s 실행
+        current_job_.remain_time--;
+        current_time_++;
+
+        // 완료된 작업 end_jobs_에 push back
+        if (current_job_.remain_time == 0) {
+            current_job_.completion_time = current_time_;
+            end_jobs_.push_back(current_job_);
+
+            int finished_job_name = current_job_.name;
+            current_job_ = Job(); // 초기화
+            return finished_job_name; // 완료 작업 이름 반환
+
+        }
+
+        return current_job_.name; // 실행 중인 작업 이름 반환
+
     }
 };
 
