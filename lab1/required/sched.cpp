@@ -262,7 +262,10 @@ public:
         left_slice_ = 0;
         last_job_name_ = 0;
     }
-
+    // MLFQ 스케줄링 함수
+    // 도착 작업을 q0에 할당
+    // 가장 높은 우선 순위의 채워진 queue에서 작업 선택
+    // time slice 소진 시 queue 우선 순위 낮춤
     int run() override {
         
         // 도착 작업 q0에 할당
@@ -281,28 +284,30 @@ public:
             if (all_empty) {
                 return -1; // 모든 queue, job_queue_ 비었으면 종료
                 }
-         }
-        
-        // 가장 높은 우선 순위의 빈 queue 찾기
-        for (int i=0; i<4; i++) {
-            if (!queues_[i].empty()) {
-                current_queue_ = i;
-                break;
-                }
-         } 
+         
+            // 가장 높은 우선 순위의 채워진 queue 찾기
+            for (int i=0; i<4; i++) {
+                if (!queues_[i].empty()) {
+                    current_job_ = queues_[i].front();
+                    queues_[i].pop();
+                    current_queue_ = i;
+                    break;
+                    }
+            } 
 
-        // context swtich 시간 추가
-        if (last_job_name_ != 0 && last_job_name_ != current_job_.name) {
-            current_time_ += switch_time_;
-         }
+            // context swtich 시간 추가
+            if (last_job_name_ != 0 && last_job_name_ != current_job_.name) {
+                current_time_ += switch_time_;
+            }
         
-        // first run time 기록
-        if (current_job_.remain_time == current_job_.service_time) { 
-            current_job_.first_run_time = current_time_;
-         }
+            // first run time 기록
+            if (current_job_.remain_time == current_job_.service_time) { 
+                current_job_.first_run_time = current_time_;
+            }
 
-        // time slice 설정
-        left_slice_ = time_slices_[current_queue_];
+            // time slice 설정
+            left_slice_ = time_slices_[current_queue_];
+         }
 
         // 1s 실행
          current_job_.remain_time--;
