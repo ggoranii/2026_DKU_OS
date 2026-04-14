@@ -225,9 +225,11 @@ public:
 class FeedBack : public Scheduler
 {
 private:
-    /*
-    * 구현 (멤버 변수/함수 추가 및 삭제 가능)
-    */
+    std::vector<std::queue<Job>> queues_; // ready queue 4개
+    std::vector<int> time_slices_; // 각 queue의 time slice
+    int current_queue_; // 현재 실행 중인 queue
+    int left_slice_; // 현재 queue의 남은 time slice
+    int last_job_name_ = 0; // 직전에 실행한 작업
 
 public:
     FeedBack(std::queue<Job> jobs, double switch_overhead, bool is_2i) : Scheduler(jobs, switch_overhead) {
@@ -237,16 +239,97 @@ public:
         else {
             name = "FeedBack_1";
         }
-        /*
-         * 위 생성자 선언 및 이름 초기화 코드 수정하지 말것.
-         * 나머지는 자유롭게 수정 및 작성 가능
-         */
+        // queue 4개 생성
+        queues_.resize(4);
+        
+        // 각 queue의 time slice 설정
+        time_slices_.resize(4);
+        if (is_2i) {
+            // q0: 1, q1: 2, q2: 4, q3: 8
+            for (int i=0; i<4; i++) {
+                time_slices_[i] = 1 << i; 
+            }
+        }
+        else {
+            // 모든 queue time slice 1
+            for (int i=0; i<4; i++) {
+                time_slices_[i] = 1; 
+            }
+        }
+
+        // 실행 queue 없음
+        current_queue_ = -1;
+        left_slice_ = 0;
+        last_job_name_ = 0;
     }
 
     int run() override {
-        /*
-        * 구현
-        */
-        return -1;
+        
+        // 도착 작업 q0에 할당
+        while (!job_queue_.empty() && job_queue_.front().arrival_time <= current_time_) {
+            queues_[0].push(job_queue_.front());
+            job_queue_.pop();
+        }
+
+        // 다음 작업 선택
+        if (current_job_.name == 0) {
+            bool all_empty = job_queue_.empty();
+            for (int i = 0; i < 4 && all_empty; i++) {
+                if (!queues_[i].empty()) 
+                all_empty = false;
+                }
+            if (all_empty) {
+                return -1; // 모든 queue, job_queue_ 비었으면 종료
+                }
+         }
+        
+        // 가장 높은 우선 순위의 빈 queue 찾기
+        for (int i=0; i<4; i++) {
+            if (!queues_[i].empty()) {
+                current_queue_ = i;
+                break;
+                }
+         } 
+
+        // context swtich 시간 추가
+        if (last_job_name_ != 0 && last_job_name_ != current_job_.name) {
+            current_time_ += switch_time_;
+         }
+        
+        // first run time 기록
+        if (current_job_.remain_time == current_job_.service_time) { 
+            current_job_.first_run_time = current_time_;
+         }
+
+        // time slice 설정
+        left_slice_ = time_slices_[current_queue_];
+
+        // 1s 실행
+         current_job_.remain_time--;
+         current_time_++;
+         left_slice_--; // 남은 time slice 감소
+         last_job_name_ = current_job_.name; // 직전에 실행한 작업 이름 저장
+
+        // 완료된 작업 end_jobs_에 push back
+        if (current_job_.remain_time == 0) { 
+            current_job_.completion_time = current_time_;
+            end_jobs_.push_back(current_job_);
+
+            int finished_job_name = current_job_.name; // 종료된 작업 이름 저장
+            current_job_ = Job(); // 초기화
+            return finished_job_name; // 완료 작업 이름 반환
+         }
+        
+        // time slice 소진 시 queue 우선 순위 낮춤
+        if (left_slice_ == 0) {
+            int new_queue = current_queue_ + 1; // 우선 순위 조정
+            if (new_queue > 3) new_queue = 3; // 가장 낮은 우선 순위는 그대로
+            queues_[new_queue].push(current_job_); // 현재 작업 새로운 queue로 이동
+            int finished_job_name = current_job_.name; // time slice 종료된 작업 이름 저장
+            current_job_ = Job(); // 초기화
+            return finished_job_name; // time slice 종료된 작업 이름 반환
+        }
+
+        return current_job_.name; // 실행 중인 작업 이름 반환
     }
 };
