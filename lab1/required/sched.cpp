@@ -296,7 +296,7 @@ public:
             } 
 
             // context swtich 시간 추가
-            if (last_job_name_ != 0 && last_job_name_ != current_job_.name) {
+            if (last_job_name_ != 0) {
                 current_time_ += switch_time_;
             }
         
