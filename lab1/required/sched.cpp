@@ -140,9 +140,7 @@ private:
     int time_slice_;
     int left_slice_;
     std::queue<Job> waiting_queue;
-    /* 
-    * 구현 (멤버 변수/함수 추가 및 삭제 가능)
-    */
+    int last_job_name_ = 0; // 직전에 실행한 작업
 
 public:
     RR(std::queue<Job> jobs, double switch_overhead, int time_slice) : Scheduler(jobs, switch_overhead)
@@ -177,8 +175,8 @@ public:
                 current_job_ = waiting_queue.front();
                 waiting_queue.pop();
 
-                // 첫 작업이 아니라면 context switch 시간 추가
-                if (!end_jobs_.empty()) {
+                // 직전에 실행한 작업과 현재 작업이 다르면 context switch 시간 추가
+                if (last_job_name_ != 0 && last_job_name_ != current_job_.name) {
                     current_time_ += switch_time_;
                 }
 
@@ -196,6 +194,7 @@ public:
         current_job_.remain_time--;
         current_time_++;
         left_slice_--; // 남은 time slice 감소
+        last_job_name_ = current_job_.name; // 직전에 실행한 작업 이름 저장
 
         // 완료된 작업 end_jobs_에 push back
         if (current_job_.remain_time == 0) { 
@@ -210,7 +209,7 @@ public:
 
         // time slice 종료 체크
         if (left_slice_ == 0) { 
-            waiting_queue.push(current_job_); // 현재 작업 대기 큐로 이동
+            waiting_queue.push(current_job_); // 현재 작업 waiting_queue로 이동
             int finished_job_name = current_job_.name; // time slice 종료된 작업 이름 저장
             current_job_ = Job(); // 초기화
             return finished_job_name; // time slice 종료된 작업 이름 반환
