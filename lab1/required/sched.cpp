@@ -210,10 +210,12 @@ public:
         // time slice 종료 체크
         if (left_slice_ == 0) { 
             // 버그 픽스 - 새 도착 작업과 기존 작업 queue 삽입 순서 꼬임 해결
+            // time slice 소진된 작업 wainting_queue로 push하기 전에 도착 작업들을 waiting_queue로 push
             while (!job_queue_.empty() && job_queue_.front().arrival_time <= current_time_) {
                 waiting_queue.push(job_queue_.front());
                 job_queue_.pop();
             }
+
             waiting_queue.push(current_job_); // 현재 작업 waiting_queue로 이동
             int finished_job_name = current_job_.name; // time slice 종료된 작업 이름 저장
             current_job_ = Job(); // 초기화
@@ -277,6 +279,13 @@ public:
         while (!job_queue_.empty() && job_queue_.front().arrival_time <= current_time_) {
             queues_[0].push(job_queue_.front());
             job_queue_.pop();
+        }
+
+        // 버그 픽스 - 선점 로직 누락
+        // q1~q3의 작업 실행중 q0에 새 작업 도착 시 선점
+        if (current_job_.name != 0 && current_queue_ > 0 && !queues_[0].empty()) {
+            queues_[current_queue_].push(current_job_); // time slice가 남은 작업 복귀
+            current_job_ = Job(); // 초기화해서 다음 작업 선택
         }
 
         // 다음 작업 선택
