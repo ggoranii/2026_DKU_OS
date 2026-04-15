@@ -24,10 +24,14 @@ public:
         name = "FCFS";
     }
 
+    // FCFS 스케줄링 함수
+    // 작업 도착 순서 = 작업 순서
+    // 1s 실행 후 작업 완료 여부 체크
+    // 모든 작업 완료 시 return -1
     int run() override
     {
     
-        // 
+        // 실행중인 작업 없을 때 새 작업 선택
         if (current_job_.name ==0) {
 
             if (job_queue_.empty()) {
@@ -49,8 +53,8 @@ public:
         }
 
         // 1s 실행
-        current_job_.remain_time--;
-        current_time_++;
+        current_job_.remain_time--; // 남은 작업 시간 감소
+        current_time_++; // 현재 시간 증가
 
         // 완료된 작업 end_jobs_에 push back
         if (current_job_.remain_time == 0) {
@@ -78,21 +82,27 @@ public:
     {
         name = "SPN";
     }
-     
+    
+    // SPN 스케줄링 함수
+    // 매 호출마다 도착 작업 ready_queue로 옮김
+    // 현재 실행 작업 없으면 service_time 가장 짧은 작업 선택
+    // 1s 실행 후 작업 완료 여부 체크
+    // 모든 작업 완료 시 return -1
     int run() override
     {
-        // 최소 작업 시간 순으로 job_quueue에 할당
+        // 도착 작업 ready_queue에 할당
         while (!job_queue_.empty() && job_queue_.front().arrival_time <= current_time_) {
             ready_queue_.push_back(job_queue_.front());
             job_queue_.pop();
          }
         
+        // 실행중인 작업 없을 때 새 작업 선택
         if (current_job_.name == 0) {
             if (job_queue_.empty() && ready_queue_.empty()) {
                 return -1; // 실행, 도착 예정, 대기 작업 없으면 종료
             }  
         
-            // 최소 작업 시간 구하는 함수
+            // ready_queue에서 service_time이 가장 짧은 작업 찾기
             int min_index = 0;
             for (size_t i=1; i<ready_queue_.size(); i++) {
             if (ready_queue_[i].service_time < ready_queue_[min_index].service_time) {
@@ -100,7 +110,7 @@ public:
                 }
             }
 
-            // 최소 작업 시간 순으로 ready_queue에서 current_job_에 할당
+            // 최소 작업 시간인 작업을 ready_queue에서 current_job_에 할당, ready_queue에서 제거
             current_job_ = ready_queue_[min_index];
             ready_queue_.erase(ready_queue_.begin() + min_index);
                          
@@ -115,8 +125,8 @@ public:
          }
 
         // 1s 실행
-        current_job_.remain_time--;
-        current_time_++;
+        current_job_.remain_time--; // 남은 작업 시간 감소
+        current_time_++; // 현재 시간 증가
 
         // 완료된 작업 end_jobs_에 push back
         if (current_job_.remain_time == 0) {
@@ -155,9 +165,9 @@ public:
     }
     
     // RR 스케줄링 함수
-    // 매 호출마다 도착 작업 wating_queue로 옮긴 후
+    // 매 호출마다 도착 작업 wating_queue로 옮김
     // 현재 작업이 없으면 FCFS 방식으로 다음 작업 선택
-    // 1초 실행 후 작업 완료 / time slice 종료 여부 체크
+    // 1s 실행 후 작업 완료 / time slice 종료 여부 체크
     // 모든 작업 완료 시 return -1
     int run() override
     {
@@ -175,7 +185,7 @@ public:
                 current_job_ = waiting_queue.front();
                 waiting_queue.pop();
 
-                // 직전에 실행한 작업과 현재 작업이 다르면 context switch 시간 추가
+                // 직전 작업과 현재 작업 다를 시 context switch 시간 추가
                 if (last_job_name_ != 0 && last_job_name_ != current_job_.name) {
                     current_time_ += switch_time_;
                 }
@@ -191,8 +201,8 @@ public:
         }
 
         // 1s 실행
-        current_job_.remain_time--;
-        current_time_++;
+        current_job_.remain_time--; // 남은 작업 시간 감소
+        current_time_++; // 현재 시간 증가
         left_slice_--; // 남은 time slice 감소
         last_job_name_ = current_job_.name; // 직전에 실행한 작업 이름 저장
 
@@ -273,6 +283,8 @@ public:
     // 도착 작업을 q0에 할당
     // 가장 높은 우선 순위의 채워진 queue에서 작업 선택
     // time slice 소진 시 queue 우선 순위 낮춤
+    // 1s 실행 후 작업 완료 여부 체크
+    // 모든 작업 완료 시 return -1
     int run() override {
         
         // 도착 작업 q0에 할당
@@ -302,7 +314,7 @@ public:
                     }
             } 
 
-            // context swtich 시간 추가
+            // 직전 작업과 현재 작업 다를 시 context swtich 시간 추가
             if (last_job_name_ != 0 && last_job_name_ != current_job_.name) {
                 current_time_ += switch_time_;
             }
