@@ -281,13 +281,6 @@ public:
             job_queue_.pop();
         }
 
-        // 버그 픽스 - 선점 로직 누락
-        // q1~q3의 작업 실행중 q0에 새 작업 도착 시 선점
-        if (current_job_.name != 0 && current_queue_ > 0 && !queues_[0].empty()) {
-            queues_[current_queue_].push(current_job_); // time slice가 남은 작업 복귀
-            current_job_ = Job(); // 초기화해서 다음 작업 선택
-        }
-
         // 다음 작업 선택
         if (current_job_.name == 0) {
             bool all_empty = job_queue_.empty();
