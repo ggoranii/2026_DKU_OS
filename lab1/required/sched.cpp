@@ -312,12 +312,6 @@ public:
             // context swtich 시간 추가
             if (last_job_name_ != 0 && last_job_name_ != current_job_.name) {
                 current_time_ += switch_time_;
-
-                // 버그 픽스 - context switch 중 도착 작업 q0에 할당
-                while (!job_queue_.empty() && job_queue_.front().arrival_time <= current_time_) {
-                    queues_[0].push(job_queue_.front());
-                    job_queue_.pop();
-                }
             }
         
             // first run time 기록
