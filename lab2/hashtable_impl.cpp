@@ -1,9 +1,9 @@
 /*
 *  DKU Operating System Lab (2026)
 *      Lab2 (Concurrency Data Structure: Hash Table)
-*      Student id : 
-*      Student name : 
-*      Date:
+*      Student id : 32213679
+*      Student name : 이현서
+*      Date: 2026/05/10
 */
 
 
@@ -73,15 +73,75 @@ HashTable::HashTable(int num_buckets) : DefaultHashTable(num_buckets) {}
 HashTable::~HashTable() {}
 
 void HashTable::insert(int key, int value) {
-    // 구현
+
+    // 해시 함수로 버킷 인덱스 구함
+    int index = hash_func(key);
+
+    // 연결 리스트 첫번째 노드 가리킴
+    HTNode* curr = buckets_[index];
+
+    // 연결 리스트에 동일 키 존재하는지 확인
+    while (curr != nullptr) {
+        // 이미 키가 존재하면 value, upd_cnt 증가
+        if (curr->key == key) {
+            curr->value += value;
+            curr->upd_cnt++;
+            return;
+        }
+        curr = curr->next;
+    }
+
+    // 동일한 키가 없는 경우 새 노드 생성
+    HTNode* new_node = new HTNode;
+    new_node->key = key;
+    new_node->upd_cnt = 0;
+    new_node->value = value;
+
+    // 새 노드를 연결 리스트 맨 앞으로
+    new_node->next = buckets_[index];   // 기존 첫 노드를 새 노드 다음으로 포인터 설정
+    buckets_[index] = new_node;         // 버킷 시작점을 새 노드로 설정
 }
 
 int HashTable::lookup(int key) {
-    // 구현
+
+    // 해시 함수로 버킷 인덱스 구함
+    int index = hash_func(key);
+
+    // 버킷 인덱스로 탐색
+    HTNode* curr = buckets_[index];
+
+    while (curr != nullptr) {
+        // key 값 일치하면 value 반환
+        if (curr->key == key)  {
+            return curr->value;
+        }
+        // 다음 노드로 이동 
+        curr = curr->next;
+    }
+    return 0;   // value가 없으면 0 반환
 }
 
 void HashTable::remove(int key) {
     // 구현
+    int index = hash_func(key);
+    HTNode* curr = buckets_[index];
+    HTNode* prev = nullptr;             // 맨 앞 노드는 이전 노드 존재 x -> nullptr
+
+    while (curr != nullptr) {
+        if (prev == nullptr) {
+            // 첫 노드를 삭제하는 경우
+            buckets_[index] = curr->next;
+        } else {
+        // 중간 노드 삭제
+        prev->next = curr->next;
+        }
+    // 메모리 누수 방지 위해 메모리 해제
+    delete curr;
+    return;
+    }
+    // 다음 노드로 이동
+    prev = curr;
+    curr = curr->next;
 }
 
 void HashTable::traversal(KVC* arr) {
