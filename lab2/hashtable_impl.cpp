@@ -128,20 +128,22 @@ void HashTable::remove(int key) {
     HTNode* prev = nullptr;             // 맨 앞 노드는 이전 노드 존재 x -> nullptr
 
     while (curr != nullptr) {
-        if (prev == nullptr) {
-            // 첫 노드를 삭제하는 경우
-            buckets_[index] = curr->next;
-        } else {
-        // 중간 노드 삭제
-        prev->next = curr->next;
+        if (curr->key == key) {
+            if (prev == nullptr) {
+                // 첫 노드를 삭제하는 경우
+                buckets_[index] = curr->next;
+            } else {
+            // 중간 노드 삭제
+            prev->next = curr->next;
+            }
+        // 메모리 누수 방지 위해 메모리 해제
+        delete curr;
+        return;
         }
-    // 메모리 누수 방지 위해 메모리 해제
-    delete curr;
-    return;
-    }
     // 다음 노드로 이동
     prev = curr;
     curr = curr->next;
+    }
 }
 
 void HashTable::traversal(KVC* arr) {
