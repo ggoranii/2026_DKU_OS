@@ -147,7 +147,8 @@ void HashTable::remove(int key) {
 }
 
 void HashTable::traversal(KVC* arr) {
-    // 구현
+    // lock이 필요 없는 싱글 스레드이므로 부모 클래스 함수 그대로 호출
+    DefaultHashTable::traversal(arr);
 }
 
 // CoarseHashTable (coarse-grained lock)
